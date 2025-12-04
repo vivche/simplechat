@@ -67,7 +67,7 @@ executor.init_app(app)
 app.config['VERSION'] = VERSION
 app.config['SECRET_KEY'] = SECRET_KEY
 
-Session(app)
+#Session(app)
 
 app.register_blueprint(admin_plugins_bp)
 app.register_blueprint(dynamic_plugins_bp)
