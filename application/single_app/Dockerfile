@@ -27,6 +27,9 @@ ENV PATH="/app/venv/bin:$PATH"
 # Add a non-root user for runtime
 RUN useradd -m -u 1000 appuser
 
+# ✅ Create writable session directory (this is the correct place)
+RUN mkdir -p /tmp/flask_session && chown appuser:appuser /tmp/flask_session
+
 # Copy only what we need
 COPY --chown=appuser:appuser application/single_app ./ 
 COPY --from=builder --chown=appuser:appuser /app/venv /app/venv
