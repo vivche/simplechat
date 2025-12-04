@@ -1,51 +1,38 @@
-# Builder stage: install dependencies in a virtualenv
-FROM cgr.dev/chainguard/python:latest-dev AS builder
 
+# -------- Builder: create venv and install deps (glibc-based) --------
+FROM python:3.11-slim AS builder
 WORKDIR /app
 
+# Minimal system tools (kept tiny; we do NOT add heavy build-essential)
+# Prebuilt wheels for SciPy on glibc mean no Fortran toolchain is needed.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3-venv \
+ && rm -rf /var/lib/apt/lists/*
 
-# Become root to install packages; Chainguard defaults to nonroot
-USER root
-
-
-# NOTE: package names may vary; key deps are gfortran, gcc, musl-dev, openblas-dev, lapack-dev, build-base
-RUN apk add --no-cache \
-    build-base \
-    gfortran \
-    musl-dev \
-    openblas-dev \
-    lapack-dev
-
-
-# Create a Python virtual environment
+# Create virtualenv
 RUN python -m venv /app/venv
-
-# Copy requirements and install them into the virtualenv
-COPY application/single_app/requirements.txt .
 ENV PATH="/app/venv/bin:$PATH"
 
+# Copy requirements and install. Install numpy first (ABI) then the rest.
+COPY application/single_app/requirements.txt .
+RUN pip install --no-cache-dir "numpy==2.1.1" \
+ && pip install --no-cache-dir -r requirements.txt
 
-# (Optional) pre-install numpy before scipy to ensure ABI alignment
-RUN pip install --no-cache-dir "numpy==2.1.1"
-
-RUN pip install --no-cache-dir -r requirements.txt
-
-FROM cgr.dev/chainguard/python:latest
-
+# -------- Runtime: copy app + venv and run --------
+FROM python:3.11-slim
 WORKDIR /app
-
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
-# Copy application code and set ownership
-COPY --chown=nonroot:nonroot application/single_app ./
+# Add a non-root user for runtime
+RUN useradd -m -u 1000 appuser
 
-# Copy the virtualenv from the builder stage
-COPY --from=builder --chown=nonroot:nonroot /app/venv /app/venv
+# Copy only what we need
+COPY --chown=appuser:appuser application/single_app ./ 
+COPY --from=builder --chown=appuser:appuser /app/venv /app/venv
 
-# Expose port
 EXPOSE 5000
+USER appuser
 
-USER nonroot:nonroot
-
+# Keep your current Python entrypoint; upgrade to gunicorn later if desired
 ENTRYPOINT [ "python", "/app/app.py" ]
