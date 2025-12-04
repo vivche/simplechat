@@ -63,7 +63,13 @@ app.config['EXECUTOR_TYPE'] = EXECUTOR_TYPE
 app.config['EXECUTOR_MAX_WORKERS'] = EXECUTOR_MAX_WORKERS
 executor = Executor()
 executor.init_app(app)
-app.config['SESSION_TYPE'] = SESSION_TYPE
+
+# Force filesystem session and set directory
+app.config['SESSION_TYPE'] = "filesystem"
+app.config['SESSION_FILE_DIR'] = "/tmp/flask_session"
+app.config['SESSION_FILE_THRESHOLD'] = 500   # optional
+app.config['SESSION_PERMANENT'] = False      # optional
+
 app.config['VERSION'] = VERSION
 app.config['SECRET_KEY'] = SECRET_KEY
 
