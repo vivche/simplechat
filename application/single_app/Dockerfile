@@ -3,12 +3,26 @@ FROM cgr.dev/chainguard/python:latest-dev AS builder
 
 WORKDIR /app
 
+# NOTE: package names may vary; key deps are gfortran, gcc, musl-dev, openblas-dev, lapack-dev, build-base
+RUN apk add --no-cache \
+    build-base \
+    gfortran \
+    musl-dev \
+    openblas-dev \
+    lapack-dev
+
+
 # Create a Python virtual environment
 RUN python -m venv /app/venv
 
 # Copy requirements and install them into the virtualenv
 COPY application/single_app/requirements.txt .
 ENV PATH="/app/venv/bin:$PATH"
+
+
+# (Optional) pre-install numpy before scipy to ensure ABI alignment
+RUN pip install --no-cache-dir "numpy==2.1.1"
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM cgr.dev/chainguard/python:latest
