@@ -67,6 +67,8 @@ executor.init_app(app)
 app.config['VERSION'] = VERSION
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = SESSION_TYPE
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 
 app.register_blueprint(admin_plugins_bp)
 app.register_blueprint(dynamic_plugins_bp)
@@ -96,13 +98,14 @@ from route_external_health import *
 
 configure_azure_monitor()
 
-# Initialize Flask-Session with default config
-Session(app)
-
 # =================== Helper Functions ===================
 @app.before_first_request
 def before_first_request():
     print("Initializing application...")
+    
+    # Initialize Flask-Session on first request
+    Session(app)
+    
     settings = get_settings()
     print(f"DEBUG:Application settings: {settings}")
     initialize_clients(settings)
