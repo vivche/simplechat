@@ -3,6 +3,11 @@ FROM cgr.dev/chainguard/python:latest-dev AS builder
 
 WORKDIR /app
 
+
+# Become root to install packages; Chainguard defaults to nonroot
+USER root
+
+
 # NOTE: package names may vary; key deps are gfortran, gcc, musl-dev, openblas-dev, lapack-dev, build-base
 RUN apk add --no-cache \
     build-base \
