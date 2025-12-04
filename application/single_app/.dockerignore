@@ -1,5 +1,5 @@
 .env
 __pycache__
-flask_session
+#flask_session
 Dockerfile
 .dockerignore

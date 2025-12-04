@@ -64,12 +64,6 @@ app.config['EXECUTOR_MAX_WORKERS'] = EXECUTOR_MAX_WORKERS
 executor = Executor()
 executor.init_app(app)
 
-# Force filesystem session and set directory
-app.config['SESSION_TYPE'] = "filesystem"
-app.config['SESSION_FILE_DIR'] = "/tmp/flask_session"
-app.config['SESSION_FILE_THRESHOLD'] = 500   # optional
-app.config['SESSION_PERMANENT'] = False      # optional
-
 app.config['VERSION'] = VERSION
 app.config['SECRET_KEY'] = SECRET_KEY
 
@@ -216,10 +210,8 @@ def before_first_request():
         else:
             print("Redis enabled but URL missing; falling back to filesystem.")
             app.config['SESSION_TYPE'] = 'filesystem'
-            app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
     else:
         app.config['SESSION_TYPE'] = 'filesystem'
-        app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 
     # Initialize Semantic Kernel and plugins
     enable_semantic_kernel = settings.get('enable_semantic_kernel', False)
