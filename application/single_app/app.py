@@ -66,8 +66,7 @@ executor.init_app(app)
 
 app.config['VERSION'] = VERSION
 app.config['SECRET_KEY'] = SECRET_KEY
-
-#Session(app)
+app.config['SESSION_TYPE'] = SESSION_TYPE
 
 app.register_blueprint(admin_plugins_bp)
 app.register_blueprint(dynamic_plugins_bp)
@@ -97,6 +96,8 @@ from route_external_health import *
 
 configure_azure_monitor()
 
+# Initialize Flask-Session with default config
+Session(app)
 
 # =================== Helper Functions ===================
 @app.before_first_request
@@ -219,8 +220,6 @@ def before_first_request():
     if enable_semantic_kernel and not per_user_semantic_kernel:
         print("Semantic Kernel is enabled. Initializing...")
         initialize_semantic_kernel()
-
-    Session(app)
 
 @app.context_processor
 def inject_settings():
