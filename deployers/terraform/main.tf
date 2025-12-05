@@ -412,6 +412,8 @@ resource "azurerm_linux_web_app" "app" {
     "AZURE_OPENAI_GPT_ACCOUNT_NAME"         = var.param_use_existing_openai_instance ? var.param_existing_azure_openai_resource_name : azurerm_cognitive_account.openai[0].name
     "AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME"   = var.param_use_existing_openai_instance ? var.param_existing_azure_openai_resource_name : azurerm_cognitive_account.openai[0].name
     "AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME"   = var.param_use_existing_openai_instance ? var.param_existing_azure_openai_resource_name : azurerm_cognitive_account.openai[0].name
+    # Provide subscription id for management calls (fallback if settings doc is empty)
+    "AZURE_OPENAI_SUBSCRIPTION_ID" = var.param_subscription_id
     "AZURE_SEARCH_SERVICE_NAME"        = azurerm_search_service.search.name
     "AZURE_SEARCH_API_KEY"             = azurerm_search_service.search.primary_key
     "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT" = azurerm_cognitive_account.docintel.endpoint

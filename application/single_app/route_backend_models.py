@@ -25,9 +25,9 @@ def register_route_backend_models(app):
         """
         settings = get_settings()
 
-        subscription_id = settings.get('azure_openai_gpt_subscription_id', '')
-        resource_group = settings.get('azure_openai_gpt_resource_group', '')
-        endpoint = settings.get('azure_openai_gpt_endpoint', '')
+        subscription_id = settings.get('azure_openai_gpt_subscription_id', '') or os.getenv('AZURE_OPENAI_SUBSCRIPTION_ID', '')
+        resource_group = settings.get('azure_openai_gpt_resource_group', '') or os.getenv('AZURE_OPENAI_RESOURCE_GROUP_NAME', '')
+        endpoint = settings.get('azure_openai_gpt_endpoint', '') or os.getenv('AZURE_OPENAI_URL', '')
         
         # Extract account name from endpoint URL
         # Commercial: https://vivche-openai-dev.openai.azure.com/ -> vivche-openai-dev
@@ -99,11 +99,16 @@ def register_route_backend_models(app):
         """
         settings = get_settings()
 
-        subscription_id = settings.get('azure_openai_embedding_subscription_id', '')
-        resource_group = settings.get('azure_openai_embedding_resource_group', '')
-        endpoint = settings.get('azure_openai_embedding_endpoint', '')
+        subscription_id = settings.get('azure_openai_embedding_subscription_id', '') or os.getenv('AZURE_OPENAI_SUBSCRIPTION_ID', '')
+        resource_group = settings.get('azure_openai_embedding_resource_group', '') or os.getenv('AZURE_OPENAI_RESOURCE_GROUP_NAME', '')
+        endpoint = settings.get('azure_openai_embedding_endpoint', '') or os.getenv('AZURE_OPENAI_URL', '')
         # Extract account name from endpoint URL (e.g., "https://vivche-openai-dev.openai.azure.com/" -> "vivche-openai-dev")
-        account_name = re.match(r'https://([^.]+)\.', endpoint).group(1) if re.match(r'https://([^.]+)\.', endpoint) else ''
+        account_name = ''
+        if 'openai.azure' in endpoint:
+            match = re.match(r'https://([^.]+)\.openai\.azure', endpoint)
+            account_name = match.group(1) if match else ''
+        else:
+            account_name = AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME or settings.get('azure_openai_embedding_account_name', '')
 
         if not subscription_id or not resource_group or not account_name:
             return jsonify({"error": "Azure Embedding Model subscription/RG/endpoint not configured"}), 400
@@ -161,9 +166,9 @@ def register_route_backend_models(app):
         """
         settings = get_settings()
 
-        subscription_id = settings.get('azure_openai_image_gen_subscription_id', '')
-        resource_group = settings.get('azure_openai_image_gen_resource_group', '')
-        endpoint = settings.get('azure_openai_image_gen_endpoint', '')
+        subscription_id = settings.get('azure_openai_image_gen_subscription_id', '') or os.getenv('AZURE_OPENAI_SUBSCRIPTION_ID', '')
+        resource_group = settings.get('azure_openai_image_gen_resource_group', '') or os.getenv('AZURE_OPENAI_RESOURCE_GROUP_NAME', '')
+        endpoint = settings.get('azure_openai_image_gen_endpoint', '') or os.getenv('AZURE_OPENAI_URL', '')
         
         # Extract account name from endpoint URL
         # Commercial: https://vivche-openai-dev.openai.azure.com/ -> vivche-openai-dev
