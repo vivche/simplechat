@@ -364,10 +364,12 @@ resource "azurerm_linux_web_app" "app" {
   webdeploy_publish_basic_authentication_enabled = false   
 
   # auth_settings {
-  #     enabled                 = true
-  #     default_provider         = "azure_active_directory"
-  #     token_store_enabled     = true
-  #     active_directory {
+    "AZURE_OPENAI_URL"                      = var.param_openai_url
+    "AZURE_OPENAI_GPT_ACCOUNT_NAME"         = var.param_openai_gpt_account_name
+    "AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME"   = var.param_openai_embedding_account_name
+    "AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME"   = var.param_openai_image_gen_account_name
+    "AZURE_OPENAI_EMBEDDING_URL"            = var.param_openai_embedding_url
+    "AZURE_OPENAI_IMAGE_GEN_URL"            = var.param_openai_image_gen_url
   #       allowed_audiences = [
   #         format("https://%s%s/.auth/login/aad/callback", local.app_service_name, local.app_service_fqdn_suffix),
   #         format("https://%s%s/.auth/login/aad/callback", local.app_service_name, local.app_service_fqdn_suffix),

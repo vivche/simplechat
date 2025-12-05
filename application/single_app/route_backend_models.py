@@ -101,7 +101,7 @@ def register_route_backend_models(app):
 
         subscription_id = settings.get('azure_openai_embedding_subscription_id', '') or os.getenv('AZURE_OPENAI_SUBSCRIPTION_ID', '')
         resource_group = settings.get('azure_openai_embedding_resource_group', '') or os.getenv('AZURE_OPENAI_RESOURCE_GROUP_NAME', '')
-        endpoint = settings.get('azure_openai_embedding_endpoint', '') or os.getenv('AZURE_OPENAI_URL', '')
+        endpoint = settings.get('azure_openai_embedding_endpoint', '') or os.getenv('AZURE_OPENAI_EMBEDDING_URL', '') or os.getenv('AZURE_OPENAI_URL', '')
         # Extract account name from endpoint URL (e.g., "https://vivche-openai-dev.openai.azure.com/" -> "vivche-openai-dev")
         account_name = ''
         if 'openai.azure' in endpoint:
@@ -168,7 +168,7 @@ def register_route_backend_models(app):
 
         subscription_id = settings.get('azure_openai_image_gen_subscription_id', '') or os.getenv('AZURE_OPENAI_SUBSCRIPTION_ID', '')
         resource_group = settings.get('azure_openai_image_gen_resource_group', '') or os.getenv('AZURE_OPENAI_RESOURCE_GROUP_NAME', '')
-        endpoint = settings.get('azure_openai_image_gen_endpoint', '') or os.getenv('AZURE_OPENAI_URL', '')
+        endpoint = settings.get('azure_openai_image_gen_endpoint', '') or os.getenv('AZURE_OPENAI_IMAGE_GEN_URL', '') or os.getenv('AZURE_OPENAI_URL', '')
         
         # Extract account name from endpoint URL
         # Commercial: https://vivche-openai-dev.openai.azure.com/ -> vivche-openai-dev
