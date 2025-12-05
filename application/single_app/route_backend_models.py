@@ -27,7 +27,19 @@ def register_route_backend_models(app):
 
         subscription_id = settings.get('azure_openai_gpt_subscription_id', '')
         resource_group = settings.get('azure_openai_gpt_resource_group', '')
-        account_name = settings.get('azure_openai_gpt_endpoint', '').split('.')[0].replace("https://", "")
+        endpoint = settings.get('azure_openai_gpt_endpoint', '')
+        
+        # Extract account name from endpoint URL
+        # Commercial: https://vivche-openai-dev.openai.azure.com/ -> vivche-openai-dev
+        # Government: https://eastus2.api.cognitive.microsoft.com/ -> use AZURE_OPENAI_GPT_ACCOUNT_NAME env var
+        account_name = ''
+        if 'openai.azure' in endpoint:
+            # Commercial cloud endpoint
+            match = re.match(r'https://([^.]+)\.openai\.azure', endpoint)
+            account_name = match.group(1) if match else ''
+        else:
+            # Government/custom cloud - use environment variable or settings
+            account_name = AZURE_OPENAI_GPT_ACCOUNT_NAME or settings.get('azure_openai_gpt_account_name', '')
 
         if not subscription_id or not resource_group or not account_name:
             return jsonify({"error": "Azure GPT Model subscription/RG/endpoint not configured"}), 400
@@ -89,7 +101,9 @@ def register_route_backend_models(app):
 
         subscription_id = settings.get('azure_openai_embedding_subscription_id', '')
         resource_group = settings.get('azure_openai_embedding_resource_group', '')
-        account_name = settings.get('azure_openai_embedding_endpoint', '').split('.')[0].replace("https://", "")
+        endpoint = settings.get('azure_openai_embedding_endpoint', '')
+        # Extract account name from endpoint URL (e.g., "https://vivche-openai-dev.openai.azure.com/" -> "vivche-openai-dev")
+        account_name = re.match(r'https://([^.]+)\.', endpoint).group(1) if re.match(r'https://([^.]+)\.', endpoint) else ''
 
         if not subscription_id or not resource_group or not account_name:
             return jsonify({"error": "Azure Embedding Model subscription/RG/endpoint not configured"}), 400
@@ -149,7 +163,19 @@ def register_route_backend_models(app):
 
         subscription_id = settings.get('azure_openai_image_gen_subscription_id', '')
         resource_group = settings.get('azure_openai_image_gen_resource_group', '')
-        account_name = settings.get('azure_openai_image_gen_endpoint', '').split('.')[0].replace("https://", "")
+        endpoint = settings.get('azure_openai_image_gen_endpoint', '')
+        
+        # Extract account name from endpoint URL
+        # Commercial: https://vivche-openai-dev.openai.azure.com/ -> vivche-openai-dev
+        # Government: https://eastus2.api.cognitive.microsoft.com/ -> use AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME env var
+        account_name = ''
+        if 'openai.azure' in endpoint:
+            # Commercial cloud endpoint
+            match = re.match(r'https://([^.]+)\.openai\.azure', endpoint)
+            account_name = match.group(1) if match else ''
+        else:
+            # Government/custom cloud - use environment variable or settings
+            account_name = AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME or settings.get('azure_openai_image_gen_account_name', '')
 
         if not subscription_id or not resource_group or not account_name:
             return jsonify({"error": "Azure Image Model subscription/RG/endpoint not configured"}), 400

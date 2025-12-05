@@ -155,6 +155,11 @@ if AZURE_ENVIRONMENT == "custom":
 else:
     AUTHORITY = f"https://login.microsoftonline.us/{TENANT_ID}"
 
+# Azure OpenAI Resource Names (for Government/custom clouds where endpoint doesn't match resource name)
+AZURE_OPENAI_GPT_ACCOUNT_NAME = os.getenv("AZURE_OPENAI_GPT_ACCOUNT_NAME", "")
+AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME = os.getenv("AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME", "")
+AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME = os.getenv("AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME", "")
+
 # Commercial Azure Video Indexer Endpoint
 video_indexer_endpoint = "https://api.videoindexer.ai"
 
