@@ -88,10 +88,19 @@ load_dotenv()
 EXECUTOR_TYPE = 'thread'
 EXECUTOR_MAX_WORKERS = 30
 SESSION_TYPE = 'filesystem'
+SESSION_FILE_DIR = '/tmp/flask_session'
 VERSION = "0.229.098"
+
+# Ensure session directory exists
+import os as _os
+if not _os.path.exists(SESSION_FILE_DIR):
+    _os.makedirs(SESSION_FILE_DIR, exist_ok=True)
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+SESSION_PERMANENT = False
+PERMANENT_SESSION_LIFETIME = 3600  # 1 hour
 
 # Security Headers Configuration
 SECURITY_HEADERS = {

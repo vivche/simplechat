@@ -143,6 +143,26 @@ variable "param_existing_azure_openai_resource_group_name" {
   type        = string
 }
 
+variable "param_openai_embedding_url" {
+  description = "Azure OpenAI embedding endpoint URL."
+  type        = string
+}
+
+variable "param_openai_image_gen_url" {
+  description = "Azure OpenAI image generation endpoint URL."
+  type        = string
+}
+
+variable "param_openai_embedding_account_name" {
+  description = "Azure OpenAI embedding account name."
+  type        = string
+}
+
+variable "param_openai_image_gen_account_name" {
+  description = "Azure OpenAI image generation account name."
+  type        = string
+}
+
 variable "param_create_entra_security_groups" {
   description = "Set to true to create Entra ID security groups."
   type        = bool
@@ -176,6 +196,7 @@ locals {
   log_analytics_name          = "${var.param_base_name}-${var.param_environment}-la"
   managed_identity_name       = "${var.param_base_name}-${var.param_environment}-id"
   search_service_name         = "${var.param_base_name}-${var.param_environment}-search"
+  redis_cache_name            = "${var.param_base_name}-${var.param_environment}-redis"
   storage_account_base        = "${var.param_base_name}${var.param_environment}sa"
   storage_account_name        = substr(replace(local.storage_account_base, "/[^a-z0-9]/", ""), 0, 24)
   
@@ -363,22 +384,6 @@ resource "azurerm_linux_web_app" "app" {
   ftp_publish_basic_authentication_enabled = false
   webdeploy_publish_basic_authentication_enabled = false   
 
-  # auth_settings {
-    "AZURE_OPENAI_URL"                      = var.param_openai_url
-    "AZURE_OPENAI_GPT_ACCOUNT_NAME"         = var.param_openai_gpt_account_name
-    "AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME"   = var.param_openai_embedding_account_name
-    "AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME"   = var.param_openai_image_gen_account_name
-    "AZURE_OPENAI_EMBEDDING_URL"            = var.param_openai_embedding_url
-    "AZURE_OPENAI_IMAGE_GEN_URL"            = var.param_openai_image_gen_url
-  #       allowed_audiences = [
-  #         format("https://%s%s/.auth/login/aad/callback", local.app_service_name, local.app_service_fqdn_suffix),
-  #         format("https://%s%s/.auth/login/aad/callback", local.app_service_name, local.app_service_fqdn_suffix),
-  #       ]
-  #       client_id = azuread_application.app_registration.client_id
-  #       client_secret_setting_name = "AZURE_CLIENT_SECRET" # This is the secret name in Key Vault
-  #     }
-  # }
-
   auth_settings_v2 {
     auth_enabled           = true
     unauthenticated_action = "RedirectToLoginPage"
@@ -414,12 +419,18 @@ resource "azurerm_linux_web_app" "app" {
     "AZURE_OPENAI_GPT_ACCOUNT_NAME"         = var.param_use_existing_openai_instance ? var.param_existing_azure_openai_resource_name : azurerm_cognitive_account.openai[0].name
     "AZURE_OPENAI_EMBEDDING_ACCOUNT_NAME"   = var.param_use_existing_openai_instance ? var.param_existing_azure_openai_resource_name : azurerm_cognitive_account.openai[0].name
     "AZURE_OPENAI_IMAGE_GEN_ACCOUNT_NAME"   = var.param_use_existing_openai_instance ? var.param_existing_azure_openai_resource_name : azurerm_cognitive_account.openai[0].name
+    "AZURE_OPENAI_EMBEDDING_URL"            = var.param_openai_embedding_url
+    "AZURE_OPENAI_IMAGE_GEN_URL"            = var.param_openai_image_gen_url
     # Provide subscription id for management calls (fallback if settings doc is empty)
     "AZURE_OPENAI_SUBSCRIPTION_ID" = var.param_subscription_id
     "AZURE_SEARCH_SERVICE_NAME"        = azurerm_search_service.search.name
     "AZURE_SEARCH_API_KEY"             = azurerm_search_service.search.primary_key
     "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT" = azurerm_cognitive_account.docintel.endpoint
     "AZURE_DOCUMENT_INTELLIGENCE_API_KEY"  = azurerm_cognitive_account.docintel.primary_access_key
+    "ENABLE_REDIS_CACHE"               = "true"
+    "REDIS_URL"                        = azurerm_redis_cache.redis.hostname
+    "REDIS_KEY"                        = azurerm_redis_cache.redis.primary_access_key
+    "REDIS_AUTH_TYPE"                  = "key"
     "MICROSOFT_PROVIDER_AUTHENTICATION_SECRET" = azuread_application_password.app_registration_secret.value
     "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.ai.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.ai.connection_string
@@ -674,6 +685,19 @@ resource "azurerm_search_service" "search" {
   tags                = local.common_tags
 }
 
+# --- Azure Cache for Redis ---
+resource "azurerm_redis_cache" "redis" {
+  name                = local.redis_cache_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  capacity            = 0 # 250MB cache (Basic tier)
+  family              = "C" # Basic tier
+  sku_name            = "Basic" # Basic tier - suitable for dev/test, change to "Standard" for HA in production
+  minimum_tls_version = "1.2"
+  public_network_access_enabled = true # Required for App Service to connect
+  tags                = local.common_tags
+}
+
 
 #########################################
 #
@@ -747,6 +771,13 @@ resource "azurerm_role_assignment" "acr_pull" {
   principal_id         = azurerm_linux_web_app.app.identity[0].principal_id
 }
 
+# Redis Cache Contributor for Managed Identity
+resource "azurerm_role_assignment" "managed_identity_redis_contributor" {
+  scope                = azurerm_redis_cache.redis.id
+  role_definition_name = "Contributor"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
 
 ##################################################
 #
@@ -772,4 +803,15 @@ output "web_app_url" {
 output "resource_group_name" {
   description = "Name of the created Resource Group."
   value       = azurerm_resource_group.rg.name
+}
+
+output "redis_cache_hostname" {
+  description = "The hostname of the Azure Cache for Redis."
+  value       = azurerm_redis_cache.redis.hostname
+}
+
+output "redis_cache_primary_connection_string" {
+  description = "The primary connection string for Azure Cache for Redis."
+  value       = azurerm_redis_cache.redis.primary_connection_string
+  sensitive   = true
 }

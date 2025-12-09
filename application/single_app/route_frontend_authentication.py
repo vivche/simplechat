@@ -55,7 +55,9 @@ def register_route_frontend_authentication(app):
                 # Fall back to environment variable if Front Door is enabled but no URL is set
                 redirect_uri = LOGIN_REDIRECT_URL or url_for('authorized', _external=True, _scheme='https')
         else:
-            redirect_uri = url_for('authorized', _external=True, _scheme='https')
+            # Use http for localhost, https otherwise
+            scheme = 'http' if request.host.startswith('localhost') or request.host.startswith('127.0.0.1') else 'https'
+            redirect_uri = url_for('authorized', _external=True, _scheme=scheme)
         
         debug_print(f"LOGIN_REDIRECT_URL (env): {LOGIN_REDIRECT_URL}")
         debug_print(f"front_door_url (db): {settings.get('front_door_url')}")
@@ -104,7 +106,9 @@ def register_route_frontend_authentication(app):
                 # Fall back to environment variable if Front Door is enabled but no URL is set
                 redirect_uri = LOGIN_REDIRECT_URL or url_for('authorized', _external=True, _scheme='https')
         else:
-            redirect_uri = url_for('authorized', _external=True, _scheme='https')
+            # Use http for localhost, https otherwise
+            scheme = 'http' if request.host.startswith('localhost') or request.host.startswith('127.0.0.1') else 'https'
+            redirect_uri = url_for('authorized', _external=True, _scheme=scheme)
         
         print(f"Token exchange using redirect_uri: {redirect_uri}")
 

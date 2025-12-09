@@ -41,5 +41,8 @@ COPY . /app
 
 EXPOSE ${PORT}
 
+# Set PYTHONPATH so imports from application/single_app work
+ENV PYTHONPATH=/app/application/single_app:$PYTHONPATH
+
 # Run via Gunicorn using the Flask app located in application.single_app.app:app
-CMD ["gunicorn", "--workers", "3", "--threads", "4", "--bind", "0.0.0.0:8000", "application.single_app.app:app"]
+CMD ["gunicorn", "--workers", "3", "--threads", "4", "--bind", "0.0.0.0:8000", "--chdir", "/app/application/single_app", "app:app"]

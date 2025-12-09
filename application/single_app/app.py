@@ -1,6 +1,7 @@
 # app.py
 import builtins
-import logging
+importdocker compose logs simplechat --tail 100 | Select-String -Pattern "login|session|authorized|token|error" -Context 1docker compose logs simplechat --tail 100 | Select-String -Pattern "login|session|authorized|token|error" -Context 1logging
+import os
 import pickle
 import json
 
@@ -69,6 +70,9 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = SESSION_TYPE
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 app.register_blueprint(admin_plugins_bp)
 app.register_blueprint(dynamic_plugins_bp)
@@ -96,15 +100,76 @@ from functions_global_agents import ensure_default_global_agent_exists
 
 from route_external_health import *
 
-configure_azure_monitor()
+# Configure Azure Monitor only if connection string or instrumentation key is provided
+# (optional for local Docker development)
+if os.environ.get('APPLICATIONINSIGHTS_CONNECTION_STRING') or os.environ.get('APPINSIGHTS_INSTRUMENTATIONKEY'):
+    try:
+        configure_azure_monitor()
+    except Exception as e:
+        print(f"[WARNING] Failed to configure Azure Monitor: {e}")
+else:
+    print("[INFO] Azure Monitor not configured (neither APPLICATIONINSIGHTS_CONNECTION_STRING nor APPINSIGHTS_INSTRUMENTATIONKEY set)")
 
 # =================== Helper Functions ===================
+
+# Initialize session early - before first request
+def _initialize_session():
+    """Initialize Flask-Session with proper configuration"""
+    try:
+        settings = get_settings()
+        
+        # Setup session handling
+        if settings.get('enable_redis_cache'):
+            redis_url = settings.get('redis_url', '').strip()
+            redis_auth_type = settings.get('redis_auth_type', 'key').strip().lower()
+
+            if redis_url:
+                app.config['SESSION_TYPE'] = 'redis'
+                if redis_auth_type == 'managed_identity':
+                    print("Redis enabled using Managed Identity")
+                    from azure.identity import DefaultAzureCredential
+                    credential = DefaultAzureCredential()
+                    redis_hostname = redis_url.split('.')[0]
+                    token = credential.get_token(f"https://{redis_hostname}.cacheinfra.windows.net:10225/appid")
+                    app.config['SESSION_REDIS'] = Redis(
+                        host=redis_url,
+                        port=6380,
+                        db=0,
+                        password=token.token,
+                        ssl=True
+                    )
+                else:
+                    # Default to key-based auth
+                    redis_key = settings.get('redis_key', '').strip()
+                    print("Redis enabled using Access Key")
+                    app.config['SESSION_REDIS'] = Redis(
+                        host=redis_url,
+                        port=6380,
+                        db=0,
+                        password=redis_key,
+                        ssl=True
+                    )
+            else:
+                print("Redis enabled but URL missing; falling back to filesystem.")
+                app.config['SESSION_TYPE'] = 'filesystem'
+        else:
+            app.config['SESSION_TYPE'] = 'filesystem'
+        
+        # Now initialize Flask-Session with finalized config
+        Session(app)
+        print(f"Flask-Session initialized with type: {app.config.get('SESSION_TYPE')}")
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize Flask-Session: {e}")
+        import traceback
+        traceback.print_exc()
+
 @app.before_first_request
 def before_first_request():
     print("Initializing application...")
     
-    # Initialize Flask-Session on first request
-    Session(app)
+    # Initialize Flask-Session if not already done
+    if not hasattr(app, 'session_interface') or app.session_interface.__class__.__name__ == 'NullSessionInterface':
+        _initialize_session()
     
     settings = get_settings()
     print(f"DEBUG:Application settings: {settings}")
@@ -180,49 +245,13 @@ def before_first_request():
     timer_thread.start()
     print("Logging timer background task started.")
 
-
-    # Setup session handling
-    if settings.get('enable_redis_cache'):
-        redis_url = settings.get('redis_url', '').strip()
-        redis_auth_type = settings.get('redis_auth_type', 'key').strip().lower()
-
-        if redis_url:
-            app.config['SESSION_TYPE'] = 'redis'
-            if redis_auth_type == 'managed_identity':
-                print("Redis enabled using Managed Identity")
-                credential = DefaultAzureCredential()
-                redis_hostname = redis_url.split('.')[0]  # Extract the first part of the hostname
-                token = credential.get_token(f"https://{redis_hostname}.cacheinfra.windows.net:10225/appid")
-                app.config['SESSION_REDIS'] = Redis(
-                    host=redis_url,
-                    port=6380,
-                    db=0,
-                    password=token.token,
-                    ssl=True
-                )
-            else:
-                # Default to key-based auth
-                redis_key = settings.get('redis_key', '').strip()
-                print("Redis enabled using Access Key")
-                app.config['SESSION_REDIS'] = Redis(
-                    host=redis_url,
-                    port=6380,
-                    db=0,
-                    password=redis_key,
-                    ssl=True
-                )
-        else:
-            print("Redis enabled but URL missing; falling back to filesystem.")
-            app.config['SESSION_TYPE'] = 'filesystem'
-    else:
-        app.config['SESSION_TYPE'] = 'filesystem'
-
     # Initialize Semantic Kernel and plugins
     enable_semantic_kernel = settings.get('enable_semantic_kernel', False)
     per_user_semantic_kernel = settings.get('per_user_semantic_kernel', False)
     if enable_semantic_kernel and not per_user_semantic_kernel:
         print("Semantic Kernel is enabled. Initializing...")
         initialize_semantic_kernel()
+
 
 @app.context_processor
 def inject_settings():
