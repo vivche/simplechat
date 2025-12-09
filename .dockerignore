@@ -1,0 +1,65 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Python cache and build artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.eggs
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# Virtual environments
+.venv
+venv
+ENV
+env
+
+# Environment files with secrets
+.env
+.env.local
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Large artifacts and documentation
+artifacts
+docs
+*.md
+README.md
+LICENSE
+SECURITY.md
+RELEASE_NOTES.md
+
+# Node modules (if any)
+node_modules
+
+# Terraform state
+deployers/terraform/*.tfstate
+deployers/terraform/*.tfstate.backup
+deployers/terraform/.terraform
+
+# Test and functional test files
+functional_tests
+scripts
+
+# Docker files (don't need to copy into image)
+Dockerfile
+docker-compose.yml
+.dockerignore

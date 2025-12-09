@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  simplechat:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app:cached
+      - ./flask_session:/app/flask_session
+    depends_on:
+      - redis
+      - azurite
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+
+  redis:
+    image: redis:6.2
+    ports:
+      - "6379:6379"
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --loose"
+    ports:
+      - "10000:10000"
