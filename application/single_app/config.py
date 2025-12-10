@@ -211,74 +211,110 @@ else:
     cosmos_client = CosmosClient(cosmos_endpoint, cosmos_key, consistency_level="Session")
 
 cosmos_database_name = "SimpleChat"
-cosmos_database = cosmos_client.create_database_if_not_exists(cosmos_database_name)
+try:
+    cosmos_database = cosmos_client.create_database_if_not_exists(cosmos_database_name)
+except exceptions.CosmosResourceExistsError:
+    cosmos_database = cosmos_client.get_database_client(cosmos_database_name)
 
 cosmos_conversations_container_name = "conversations"
-cosmos_conversations_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_conversations_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_conversations_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_conversations_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_conversations_container = cosmos_database.get_container_client(cosmos_conversations_container_name)
 
 cosmos_messages_container_name = "messages"
-cosmos_messages_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_messages_container_name,
-    partition_key=PartitionKey(path="/conversation_id")
-)
+try:
+    cosmos_messages_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_messages_container_name,
+        partition_key=PartitionKey(path="/conversation_id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_messages_container = cosmos_database.get_container_client(cosmos_messages_container_name)
 
 
 cosmos_settings_container_name = "settings"
-cosmos_settings_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_settings_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_settings_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_settings_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_settings_container = cosmos_database.get_container_client(cosmos_settings_container_name)
 
 cosmos_groups_container_name = "groups"
-cosmos_groups_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_groups_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_groups_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_groups_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_groups_container = cosmos_database.get_container_client(cosmos_groups_container_name)
 
 cosmos_public_workspaces_container_name = "public_workspaces"
-cosmos_public_workspaces_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_public_workspaces_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_public_workspaces_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_public_workspaces_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_public_workspaces_container = cosmos_database.get_container_client(cosmos_public_workspaces_container_name)
 
 cosmos_user_documents_container_name = "documents"
-cosmos_user_documents_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_user_documents_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_user_documents_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_user_documents_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_user_documents_container = cosmos_database.get_container_client(cosmos_user_documents_container_name)
 
 cosmos_group_documents_container_name = "group_documents"
-cosmos_group_documents_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_group_documents_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_group_documents_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_group_documents_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_group_documents_container = cosmos_database.get_container_client(cosmos_group_documents_container_name)
 
 cosmos_public_documents_container_name = "public_documents"
-cosmos_public_documents_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_public_documents_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_public_documents_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_public_documents_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_public_documents_container = cosmos_database.get_container_client(cosmos_public_documents_container_name)
 
 cosmos_user_settings_container_name = "user_settings"
-cosmos_user_settings_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_user_settings_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_user_settings_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_user_settings_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_user_settings_container = cosmos_database.get_container_client(cosmos_user_settings_container_name)
 
 cosmos_safety_container_name = "safety"
-cosmos_safety_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_safety_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_safety_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_safety_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_safety_container = cosmos_database.get_container_client(cosmos_safety_container_name)
 
 cosmos_feedback_container_name = "feedback"
-cosmos_feedback_container = cosmos_database.create_container_if_not_exists(
-    id=cosmos_feedback_container_name,
-    partition_key=PartitionKey(path="/id")
-)
+try:
+    cosmos_feedback_container = cosmos_database.create_container_if_not_exists(
+        id=cosmos_feedback_container_name,
+        partition_key=PartitionKey(path="/id")
+    )
+except exceptions.CosmosResourceExistsError:
+    cosmos_feedback_container = cosmos_database.get_container_client(cosmos_feedback_container_name)
 
 cosmos_archived_conversations_container_name = "archived_conversations"
 cosmos_archived_conversations_container = cosmos_database.create_container_if_not_exists(

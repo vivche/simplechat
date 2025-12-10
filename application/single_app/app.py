@@ -1,6 +1,6 @@
 # app.py
 import builtins
-importdocker compose logs simplechat --tail 100 | Select-String -Pattern "login|session|authorized|token|error" -Context 1docker compose logs simplechat --tail 100 | Select-String -Pattern "login|session|authorized|token|error" -Context 1logging
+import logging
 import os
 import pickle
 import json
@@ -100,6 +100,70 @@ from functions_global_agents import ensure_default_global_agent_exists
 
 from route_external_health import *
 
+# Initialize Flask-Session immediately at startup
+def _initialize_session_at_startup():
+    """Initialize Flask-Session with proper configuration at application startup"""
+    try:
+        settings = get_settings()
+        
+        # Setup session handling
+        if settings.get('enable_redis_cache'):
+            redis_url = settings.get('redis_url', '').strip()
+            redis_auth_type = settings.get('redis_auth_type', 'key').strip().lower()
+            redis_port = int(settings.get('redis_port', 6380))
+
+            if redis_url:
+                app.config['SESSION_TYPE'] = 'redis'
+                if redis_auth_type == 'managed_identity':
+                    print("Redis enabled using Managed Identity")
+                    from azure.identity import DefaultAzureCredential
+                    credential = DefaultAzureCredential()
+                    redis_hostname = redis_url.split('.')[0]
+                    token = credential.get_token(f"https://{redis_hostname}.cacheinfra.windows.net:10225/appid")
+                    app.config['SESSION_REDIS'] = Redis(
+                        host=redis_url,
+                        port=redis_port,
+                        db=0,
+                        password=token.token,
+                        ssl=True
+                    )
+                elif redis_auth_type == 'none':
+                    # Local development without authentication
+                    print(f"Redis enabled without authentication (local dev) at {redis_url}:{redis_port}")
+                    app.config['SESSION_REDIS'] = Redis(
+                        host=redis_url,
+                        port=redis_port,
+                        db=0,
+                        ssl=False
+                    )
+                else:
+                    # Default to key-based auth
+                    redis_key = settings.get('redis_key', '').strip()
+                    print(f"Redis enabled using Access Key at {redis_url}:{redis_port}")
+                    app.config['SESSION_REDIS'] = Redis(
+                        host=redis_url,
+                        port=redis_port,
+                        db=0,
+                        password=redis_key,
+                        ssl=True
+                    )
+            else:
+                print("Redis enabled but URL missing; falling back to filesystem.")
+                app.config['SESSION_TYPE'] = 'filesystem'
+        else:
+            app.config['SESSION_TYPE'] = 'filesystem'
+        
+        # Now initialize Flask-Session with finalized config
+        Session(app)
+        print(f"Flask-Session initialized with type: {app.config.get('SESSION_TYPE')}")
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize Flask-Session: {e}")
+        import traceback
+        traceback.print_exc()
+
+# Initialize session immediately
+_initialize_session_at_startup()
+
 # Configure Azure Monitor only if connection string or instrumentation key is provided
 # (optional for local Docker development)
 if os.environ.get('APPLICATIONINSIGHTS_CONNECTION_STRING') or os.environ.get('APPINSIGHTS_INSTRUMENTATIONKEY'):
@@ -122,6 +186,7 @@ def _initialize_session():
         if settings.get('enable_redis_cache'):
             redis_url = settings.get('redis_url', '').strip()
             redis_auth_type = settings.get('redis_auth_type', 'key').strip().lower()
+            redis_port = int(settings.get('redis_port', 6380))
 
             if redis_url:
                 app.config['SESSION_TYPE'] = 'redis'
@@ -133,18 +198,27 @@ def _initialize_session():
                     token = credential.get_token(f"https://{redis_hostname}.cacheinfra.windows.net:10225/appid")
                     app.config['SESSION_REDIS'] = Redis(
                         host=redis_url,
-                        port=6380,
+                        port=redis_port,
                         db=0,
                         password=token.token,
                         ssl=True
                     )
+                elif redis_auth_type == 'none':
+                    # Local development without authentication
+                    print(f"Redis enabled without authentication (local dev) at {redis_url}:{redis_port}")
+                    app.config['SESSION_REDIS'] = Redis(
+                        host=redis_url,
+                        port=redis_port,
+                        db=0,
+                        ssl=False
+                    )
                 else:
                     # Default to key-based auth
                     redis_key = settings.get('redis_key', '').strip()
-                    print("Redis enabled using Access Key")
+                    print(f"Redis enabled using Access Key at {redis_url}:{redis_port}")
                     app.config['SESSION_REDIS'] = Redis(
                         host=redis_url,
-                        port=6380,
+                        port=redis_port,
                         db=0,
                         password=redis_key,
                         ssl=True
@@ -163,13 +237,13 @@ def _initialize_session():
         import traceback
         traceback.print_exc()
 
+# Call session initialization immediately (replaces deprecated @app.before_first_request)
+print("Initializing Flask-Session...")
+_initialize_session()
+
 @app.before_first_request
 def before_first_request():
     print("Initializing application...")
-    
-    # Initialize Flask-Session if not already done
-    if not hasattr(app, 'session_interface') or app.session_interface.__class__.__name__ == 'NullSessionInterface':
-        _initialize_session()
     
     settings = get_settings()
     print(f"DEBUG:Application settings: {settings}")

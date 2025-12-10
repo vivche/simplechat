@@ -109,10 +109,11 @@ def get_settings():
         'azure_apim_image_gen_api_version': '',
 
         # Redis Cache Settings
-        'enable_redis_cache': False,
-        'redis_url': '',
-        'redis_key': '',
-        'redis_auth_type': '',
+        'enable_redis_cache': os.getenv('ENABLE_REDIS_CACHE', 'false').lower() == 'true',
+        'redis_url': os.getenv('REDIS_URL', ''),
+        'redis_port': os.getenv('REDIS_PORT', '6380'),
+        'redis_key': os.getenv('REDIS_KEY', ''),
+        'redis_auth_type': os.getenv('REDIS_AUTH_TYPE', 'key'),
 
 
         # Workspaces
@@ -242,6 +243,19 @@ def get_settings():
 
         # Merge default_settings in, to fill in any missing or nested keys
         merged = deep_merge_dicts(default_settings, settings_item)
+
+        # Override with environment variables (for local development)
+        # This allows environment variables to override Cosmos DB settings
+        if os.getenv('ENABLE_REDIS_CACHE'):
+            merged['enable_redis_cache'] = os.getenv('ENABLE_REDIS_CACHE', 'false').lower() == 'true'
+        if os.getenv('REDIS_URL'):
+            merged['redis_url'] = os.getenv('REDIS_URL', '')
+        if os.getenv('REDIS_PORT'):
+            merged['redis_port'] = os.getenv('REDIS_PORT', '6380')
+        if os.getenv('REDIS_KEY'):
+            merged['redis_key'] = os.getenv('REDIS_KEY', '')
+        if os.getenv('REDIS_AUTH_TYPE'):
+            merged['redis_auth_type'] = os.getenv('REDIS_AUTH_TYPE', 'key')
 
         # If merging added anything new, upsert back to Cosmos so future reads remain up to date
         if merged != settings_item:
