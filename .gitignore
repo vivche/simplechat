@@ -18,6 +18,13 @@ __pycache__
 .pem
 .deployment
 
+# Terraform files
+*.tfvars
+*.tfplan
+
+# Docker image archives
+*.tar
+
 # macOS  custom attributes file
 .ds_store
 
