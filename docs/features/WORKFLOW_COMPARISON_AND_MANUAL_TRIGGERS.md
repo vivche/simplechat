@@ -92,7 +92,7 @@ Different secret names suggest these workflows may target different Azure Contai
 - name: Install Ajv
   run: npm install ajv@^8.0.0 ajv-formats
 ```
-Two separate steps (duplicate step names)
+Two separate steps with **duplicate step names** (⚠️ Note: This causes confusing logs in the GitHub Actions UI and should be fixed by using unique step names)
 
 **SimpleChat Container APP Docker Image Publish**:
 ```yaml
@@ -101,7 +101,7 @@ Two separate steps (duplicate step names)
     npm install ajv@^8.0.0 ajv-cli@^5.0.0
     npm install ajv@^8.0.0 ajv-formats
 ```
-Combined into a single step with better naming
+Combined into a single step with better naming (✅ Improved approach)
 
 ## Why the "Run workflow" Button Doesn't Appear
 
