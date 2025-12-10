@@ -1,0 +1,46 @@
+name: SimpleChat Container Build and Push
+
+on:
+  push:
+    branches:
+    - feature/containerize-app
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Azure Container Registry Login
+      uses: Azure/docker-login@v2
+      with:
+        # Container registry username
+        username: ${{ secrets.CONTAINER_ACR_USERNAME }}
+        # Container registry password
+        password: ${{ secrets.CONTAINER_ACR_PASSWORD }}
+        # Container registry server url
+        login-server: ${{ secrets.CONTAINER_ACR_LOGIN_SERVER }}
+        
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        
+    - name: Install Ajv dependencies
+      run: |
+        npm install ajv@^8.0.0 ajv-cli@^5.0.0
+        npm install ajv@^8.0.0 ajv-formats
+        
+    - name: Generate standalone JSON schema validators
+      run: node scripts/generate-validators.mjs
+      
+    - name: Build and Push Docker image
+      run: |
+        docker build . --file Dockerfile --tag ${{ secrets.CONTAINER_ACR_LOGIN_SERVER }}/simple-chat-container:$(date +'%Y-%m-%d')_$GITHUB_RUN_NUMBER
+        docker tag ${{ secrets.CONTAINER_ACR_LOGIN_SERVER }}/simple-chat-container:$(date +'%Y-%m-%d')_$GITHUB_RUN_NUMBER ${{ secrets.CONTAINER_ACR_LOGIN_SERVER }}/simple-chat-container:latest
+        docker push ${{ secrets.CONTAINER_ACR_LOGIN_SERVER }}/simple-chat-container:$(date +'%Y-%m-%d')_$GITHUB_RUN_NUMBER
+        docker push ${{ secrets.CONTAINER_ACR_LOGIN_SERVER }}/simple-chat-container:latest
