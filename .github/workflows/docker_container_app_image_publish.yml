@@ -1,4 +1,4 @@
-name: SimpleChat Container Build and Push
+name: SimpleChat Container APP Docker Image Publish
 
 on:
   push:
