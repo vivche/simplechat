@@ -8,6 +8,17 @@ from swagger_wrapper import swagger_route, get_auth_security
 import redis 
 
 
+def get_managed_identity_credential():
+    """
+    Get DefaultAzureCredential configured to use user-assigned MI if specified,
+    otherwise uses system-assigned MI.
+    """
+    managed_identity_credential_kwargs = {}
+    if USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID:
+        managed_identity_credential_kwargs["managed_identity_client_id"] = USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID
+    return DefaultAzureCredential(**managed_identity_credential_kwargs)
+
+
 def register_route_backend_settings(app):
     @app.route('/api/admin/settings/check_index_fields', methods=['POST'])
     @swagger_route(security=get_auth_security())
@@ -320,7 +331,7 @@ def _test_multimodal_vision_connection(payload):
             
             if auth_type == 'managed_identity':
                 token_provider = get_bearer_token_provider(
-                    DefaultAzureCredential(), 
+                    get_managed_identity_credential(), 
                     cognitive_services_scope
                 )
                 gpt_client = AzureOpenAI(
@@ -385,7 +396,7 @@ def get_index_client() -> SearchIndexClient:
         endpoint = settings["azure_ai_search_endpoint"].rstrip("/")
         if settings.get("azure_ai_search_authentication_type", "key") == "managed_identity":
             from config import search_data_plane_scope
-            credential = DefaultAzureCredential()
+            credential = get_managed_identity_credential()
             if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                 return SearchIndexClient(endpoint=endpoint,
                                           credential=credential,
@@ -424,7 +435,7 @@ def _test_gpt_connection(payload):
         gpt_model = selected_model.get('deploymentName')
 
         if direct_data.get('auth_type') == 'managed_identity':
-            token_provider = get_bearer_token_provider(DefaultAzureCredential(), cognitive_services_scope)
+            token_provider = get_bearer_token_provider(get_managed_identity_credential(), cognitive_services_scope)
             
             gpt_client = AzureOpenAI(
                 api_version=api_version,
@@ -468,7 +479,7 @@ def _test_redis_connection(payload):
         if redis_auth_type == 'managed_identity':
             # Acquire token from managed identity for Redis scope
             # Extract hostname from redis_host to build the scope dynamically
-            credential = DefaultAzureCredential()
+            credential = get_managed_identity_credential()
             redis_hostname = redis_host.split('.')[0]
             token = credential.get_token(f"https://{redis_hostname}.cacheinfra.windows.net:10225/appid")
             redis_password = token.token
@@ -526,7 +537,7 @@ def _test_embedding_connection(payload):
         embedding_model = selected_model.get('deploymentName')
 
         if direct_data.get('auth_type') == 'managed_identity':
-            token_provider = get_bearer_token_provider(DefaultAzureCredential(), cognitive_services_scope)
+            token_provider = get_bearer_token_provider(get_managed_identity_credential(), cognitive_services_scope)
             
             embedding_client = AzureOpenAI(
                 api_version=api_version,
@@ -579,7 +590,7 @@ def _test_image_gen_connection(payload):
         image_gen_model = selected_model.get('deploymentName')
 
         if direct_data.get('auth_type') == 'managed_identity':
-            token_provider = get_bearer_token_provider(DefaultAzureCredential(), cognitive_services_scope)
+            token_provider = get_bearer_token_provider(get_managed_identity_credential(), cognitive_services_scope)
             
             image_gen_client = AzureOpenAI(
                 api_version=api_version,
@@ -634,13 +645,13 @@ def _test_safety_connection(payload):
             if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                 content_safety_client = ContentSafetyClient(
                     endpoint=endpoint,
-                    credential=DefaultAzureCredential(),
+                    credential=get_managed_identity_credential(),
                     credential_scopes=[cognitive_services_scope]
                 )
             else:
                 content_safety_client = ContentSafetyClient(
                     endpoint=endpoint,
-                    credential=DefaultAzureCredential()
+                    credential=get_managed_identity_credential()
                 )
         else:
             content_safety_client = ContentSafetyClient(
@@ -680,7 +691,7 @@ def _test_azure_ai_search_connection(payload):
         if direct_data.get('auth_type') == 'managed_identity':
             # Use search_data_plane_scope for data operations
             from config import search_data_plane_scope
-            credential = DefaultAzureCredential()
+            credential = get_managed_identity_credential()
             search_token = credential.get_token(search_data_plane_scope).token
             headers = {
                 'Authorization': f'Bearer {search_token}',
@@ -722,14 +733,14 @@ def _test_azure_doc_intelligence_connection(payload):
             if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                 document_intelligence_client = DocumentIntelligenceClient(
                     endpoint=endpoint,
-                    credential=DefaultAzureCredential(),
+                    credential=get_managed_identity_credential(),
                     credential_scopes=[cognitive_services_scope],
                     api_version="2024-11-30"    # Must be specified otherwise looks for 2023-07-31-preview by default which is not a valid version in Azure Government
                 )
             else:
                 document_intelligence_client = DocumentIntelligenceClient(
                     endpoint=endpoint,
-                    credential=DefaultAzureCredential()
+                    credential=get_managed_identity_credential()
                 )
         else:
             document_intelligence_client = DocumentIntelligenceClient(

@@ -89,7 +89,7 @@ EXECUTOR_TYPE = 'thread'
 EXECUTOR_MAX_WORKERS = 30
 SESSION_TYPE = 'filesystem'
 SESSION_FILE_DIR = '/tmp/flask_session'
-VERSION = "0.229.104"
+VERSION = "0.229.105"
 
 # Ensure session directory exists
 import os as _os
@@ -151,6 +151,11 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 APP_URI = f"api://{CLIENT_ID}"
 CLIENT_SECRET = os.getenv("MICROSOFT_PROVIDER_AUTHENTICATION_SECRET")
 TENANT_ID = os.getenv("TENANT_ID")
+
+# User-assigned Managed Identity Configuration
+# When using managed identity authentication, specify the client ID of the user-assigned MI
+# If not set, DefaultAzureCredential will use system-assigned MI
+USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID = os.getenv("USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID", "")
 SCOPE = ["User.Read", "User.ReadBasic.All", "People.Read.All", "Group.Read.All"] # Adjust scope according to your needs
 MICROSOFT_PROVIDER_AUTHENTICATION_SECRET = os.getenv("MICROSOFT_PROVIDER_AUTHENTICATION_SECRET")
 LOGIN_REDIRECT_URL = os.getenv("LOGIN_REDIRECT_URL")
@@ -210,7 +215,11 @@ cosmos_key = os.getenv("AZURE_COSMOS_KEY")
 cosmos_authentication_type = os.getenv("AZURE_COSMOS_AUTHENTICATION_TYPE", "key") #key or managed_identity
 
 if cosmos_authentication_type == "managed_identity":
-    cosmos_client = CosmosClient(cosmos_endpoint, credential=DefaultAzureCredential(), consistency_level="Session")
+    # Use user-assigned MI if configured, otherwise use system-assigned MI
+    managed_identity_credential_kwargs = {}
+    if USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID:
+        managed_identity_credential_kwargs["managed_identity_client_id"] = USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID
+    cosmos_client = CosmosClient(cosmos_endpoint, credential=DefaultAzureCredential(**managed_identity_credential_kwargs), consistency_level="Session")
 else:
     cosmos_client = CosmosClient(cosmos_endpoint, cosmos_key, consistency_level="Session")
 
