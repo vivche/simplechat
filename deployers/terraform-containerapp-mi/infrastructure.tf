@@ -47,9 +47,6 @@ resource "azurerm_cosmosdb_account" "cosmos" {
     failover_priority = 0
   }
 
-  # Enable automatic failover for production
-  enable_automatic_failover = false
-
   tags = local.common_tags
 }
 
@@ -84,13 +81,7 @@ resource "azurerm_redis_cache" "redis" {
   capacity            = 0
   family              = "C"
   sku_name            = "Basic"
-  enable_non_ssl_port = false
   minimum_tls_version = "1.2"
-
-  # Enable Azure AD authentication for Managed Identity
-  redis_configuration {
-    enable_authentication = true
-  }
 
   tags = local.common_tags
 }

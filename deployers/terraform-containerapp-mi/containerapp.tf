@@ -57,7 +57,7 @@ resource "azurerm_container_app" "simplechat" {
 
       env {
         name  = "MICROSOFT_PROVIDER_AUTHENTICATION_SECRET"
-        value = var.param_app_registration_secret
+        value = azuread_application_password.app_registration_secret.value
       }
 
       env {
@@ -71,13 +71,8 @@ resource "azurerm_container_app" "simplechat" {
       }
 
       env {
-        name  = "COSMOS_KEY"
-        value = azurerm_cosmosdb_account.cosmos.primary_key
-      }
-
-      env {
         name  = "AZURE_COSMOS_AUTHENTICATION_TYPE"
-        value = "key"
+        value = "managed_identity"
       }
 
       env {
@@ -126,18 +121,8 @@ resource "azurerm_container_app" "simplechat" {
       }
 
       env {
-        name  = "SEARCH_API_KEY"
-        value = azurerm_search_service.search.primary_key
-      }
-
-      env {
         name  = "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
         value = azurerm_cognitive_account.docintel.endpoint
-      }
-
-      env {
-        name  = "DOCUMENT_INTELLIGENCE_KEY"
-        value = azurerm_cognitive_account.docintel.primary_access_key
       }
 
       env {
@@ -151,18 +136,13 @@ resource "azurerm_container_app" "simplechat" {
       }
 
       env {
-        name  = "REDIS_PASSWORD"
-        value = azurerm_redis_cache.redis.primary_access_key
-      }
-
-      env {
         name  = "REDIS_PORT"
         value = "6380"
       }
 
       env {
         name  = "REDIS_AUTH_TYPE"
-        value = "key"
+        value = "managed_identity"
       }
 
       env {
@@ -215,11 +195,24 @@ resource "azurerm_role_assignment" "containerapp_acr_pull" {
   principal_id         = azurerm_user_assigned_identity.id.principal_id
 }
 
-# Role assignment for Cosmos DB
-resource "azurerm_role_assignment" "cosmos_contributor" {
-  scope                = azurerm_cosmosdb_account.cosmos.id
-  role_definition_name = "Cosmos DB Built-in Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.id.principal_id
+# Role assignment for Cosmos DB (using Cosmos DB SQL RBAC) - User-Assigned Identity
+resource "azurerm_cosmosdb_sql_role_assignment" "cosmos_contributor" {
+  resource_group_name = data.azurerm_resource_group.rg.name
+  account_name        = azurerm_cosmosdb_account.cosmos.name
+  role_definition_id  = "${azurerm_cosmosdb_account.cosmos.id}/sqlRoleDefinitions/2bb83c32-59fc-4d7f-a7ab-9dd00331f459"  # Custom SimpleChat Database Owner role
+  principal_id        = azurerm_user_assigned_identity.id.principal_id
+  scope               = azurerm_cosmosdb_account.cosmos.id
+}
+
+# Role assignment for Cosmos DB - System-Assigned Identity
+resource "azurerm_cosmosdb_sql_role_assignment" "cosmos_contributor_system" {
+  resource_group_name = data.azurerm_resource_group.rg.name
+  account_name        = azurerm_cosmosdb_account.cosmos.name
+  role_definition_id  = "${azurerm_cosmosdb_account.cosmos.id}/sqlRoleDefinitions/2bb83c32-59fc-4d7f-a7ab-9dd00331f459"  # Custom SimpleChat Database Owner role
+  principal_id        = azurerm_container_app.simplechat.identity[0].principal_id
+  scope               = azurerm_cosmosdb_account.cosmos.id
+  
+  depends_on = [azurerm_container_app.simplechat]
 }
 
 # Role assignment for Azure AI Search
