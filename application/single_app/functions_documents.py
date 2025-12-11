@@ -2771,8 +2771,11 @@ def extract_document_metadata(document_id, user_id, group_id=None, public_worksp
     else:
         # Standard Azure OpenAI approach
         if settings.get('azure_openai_gpt_authentication_type') == 'managed_identity':
+            managed_identity_credential_kwargs = {}
+            if USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID:
+                managed_identity_credential_kwargs["managed_identity_client_id"] = USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID
             token_provider = get_bearer_token_provider(
-                DefaultAzureCredential(), 
+                DefaultAzureCredential(**managed_identity_credential_kwargs), 
                 cognitive_services_scope
             )
             gpt_client = AzureOpenAI(
@@ -3033,8 +3036,11 @@ def analyze_image_with_vision_model(image_path, user_id, document_id, settings):
             # Use managed identity or key
             auth_type = settings.get('azure_openai_gpt_authentication_type', 'key')
             if auth_type == 'managed_identity':
+                managed_identity_credential_kwargs = {}
+                if USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID:
+                    managed_identity_credential_kwargs["managed_identity_client_id"] = USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID
                 token_provider = get_bearer_token_provider(
-                    DefaultAzureCredential(), 
+                    DefaultAzureCredential(**managed_identity_credential_kwargs), 
                     cognitive_services_scope
                 )
                 gpt_client = AzureOpenAI(

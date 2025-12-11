@@ -596,14 +596,14 @@ def initialize_clients(settings):
                     if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                         document_intelligence_client = DocumentIntelligenceClient(
                             endpoint=form_recognizer_endpoint,
-                            credential=DefaultAzureCredential(),
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs),
                             credential_scopes=[cognitive_services_scope],
                             api_version="2024-11-30"
                         )
                     else:
                         document_intelligence_client = DocumentIntelligenceClient(
                             endpoint=form_recognizer_endpoint,
-                            credential=DefaultAzureCredential()
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs)
                         )
                 else:
                     document_intelligence_client = DocumentIntelligenceClient(
@@ -637,36 +637,36 @@ def initialize_clients(settings):
                         search_client_user = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-user-index",
-                            credential=DefaultAzureCredential(),
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs),
                             audience=search_data_plane_scope.replace("/.default", "")
                         )
                         search_client_group = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-group-index",
-                            credential=DefaultAzureCredential(),
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs),
                             audience=search_data_plane_scope.replace("/.default", "")
                         )
                         search_client_public = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-public-index",
-                            credential=DefaultAzureCredential(),
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs),
                             audience=search_data_plane_scope.replace("/.default", "")
                         )
                     else:
                         search_client_user = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-user-index",
-                            credential=DefaultAzureCredential()
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs)
                         )
                         search_client_group = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-group-index",
-                            credential=DefaultAzureCredential()
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs)
                         )
                         search_client_public = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-public-index",
-                            credential=DefaultAzureCredential()
+                            credential=DefaultAzureCredential(**managed_identity_credential_kwargs)
                         )
                 else:
                     search_client_user = SearchClient(
@@ -709,13 +709,13 @@ def initialize_clients(settings):
                             if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                                 content_safety_client = ContentSafetyClient(
                                     endpoint=safety_endpoint,
-                                    credential=DefaultAzureCredential(),
+                                    credential=DefaultAzureCredential(**managed_identity_credential_kwargs),
                                     credential_scopes=[cognitive_services_scope]
                                 )
                             else:
                                 content_safety_client = ContentSafetyClient(
                                     endpoint=safety_endpoint,
-                                    credential=DefaultAzureCredential()
+                                    credential=DefaultAzureCredential(**managed_identity_credential_kwargs)
                                 )
                         else:
                             content_safety_client = ContentSafetyClient(
@@ -740,7 +740,7 @@ def initialize_clients(settings):
                     blob_service_client = BlobServiceClient.from_connection_string(settings.get("office_docs_storage_account_url"))
                     CLIENTS["storage_account_office_docs_client"] = blob_service_client
                 elif settings.get("office_docs_authentication_type") == "managed_identity":
-                    blob_service_client = BlobServiceClient(account_url=settings.get("office_docs_storage_account_blob_endpoint"), credential=DefaultAzureCredential())
+                    blob_service_client = BlobServiceClient(account_url=settings.get("office_docs_storage_account_blob_endpoint"), credential=DefaultAzureCredential(**managed_identity_credential_kwargs))
                     CLIENTS["storage_account_office_docs_client"] = blob_service_client
                 
                 # Create containers if they don't exist

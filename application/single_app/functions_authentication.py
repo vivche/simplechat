@@ -285,7 +285,10 @@ def get_video_indexer_managed_identity_token(settings, video_id=None):
     debug_print(f"[VIDEO INDEXER AUTH] Using ARM scope: {arm_scope}")
     
     try:
-        credential = DefaultAzureCredential()
+        managed_identity_credential_kwargs = {}
+        if USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID:
+            managed_identity_credential_kwargs["managed_identity_client_id"] = USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID
+        credential = DefaultAzureCredential(**managed_identity_credential_kwargs)
         debug_print(f"[VIDEO INDEXER AUTH] DefaultAzureCredential initialized successfully")
         arm_token = credential.get_token(arm_scope).token
         debug_print(f"[VIDEO INDEXER AUTH] ARM token acquired successfully (length: {len(arm_token) if arm_token else 0})")
