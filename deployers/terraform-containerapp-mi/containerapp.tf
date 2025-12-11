@@ -125,9 +125,11 @@ resource "azurerm_container_app" "simplechat" {
         value = azurerm_cognitive_account.docintel.endpoint
       }
 
+      # Redis disabled by default - using filesystem-based sessions
+      # To enable Redis, change ENABLE_REDIS_CACHE to "true"
       env {
         name  = "ENABLE_REDIS_CACHE"
-        value = "true"
+        value = "false"
       }
 
       env {
@@ -248,6 +250,29 @@ resource "azurerm_role_assignment" "storage_blob_contributor" {
   scope                = azurerm_storage_account.sa.id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+####################################################################################################
+# App Registration Service Principal Role Assignments
+####################################################################################################
+
+# Get the Service Principal for the App Registration
+data "azuread_service_principal" "app_registration_sp" {
+  client_id = azuread_application.app_registration.client_id
+}
+
+# Cognitive Services OpenAI Contributor - needed for listing deployments
+resource "azurerm_role_assignment" "app_sp_openai_contributor" {
+  scope                = data.azurerm_cognitive_account.openai.id
+  role_definition_name = "Cognitive Services OpenAI Contributor"
+  principal_id         = data.azuread_service_principal.app_registration_sp.object_id
+}
+
+# Cognitive Services OpenAI User - needed for API access
+resource "azurerm_role_assignment" "app_sp_openai_user" {
+  scope                = data.azurerm_cognitive_account.openai.id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = data.azuread_service_principal.app_registration_sp.object_id
 }
 
 ####################################################################################################

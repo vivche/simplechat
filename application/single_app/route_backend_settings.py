@@ -675,8 +675,8 @@ def _test_azure_ai_search_connection(payload):
         url = f"{endpoint.rstrip('/')}/indexes?api-version=2023-11-01"
 
         if direct_data.get('auth_type') == 'managed_identity':
-            if AZURE_ENVIRONMENT in ("usgovernment", "custom"): # change credential scopes for US Gov or custom environments
-                credential_scopes=search_resource_manager + "/.default"
+            # Use search_resource_manager for the appropriate scope
+            credential_scopes = search_resource_manager + "/.default"
             arm_scope = credential_scopes
             credential = DefaultAzureCredential()
             arm_token = credential.get_token(arm_scope).token

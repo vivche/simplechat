@@ -427,7 +427,9 @@ resource "azurerm_linux_web_app" "app" {
     "AZURE_SEARCH_API_KEY"             = azurerm_search_service.search.primary_key
     "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT" = azurerm_cognitive_account.docintel.endpoint
     "AZURE_DOCUMENT_INTELLIGENCE_API_KEY"  = azurerm_cognitive_account.docintel.primary_access_key
-    "ENABLE_REDIS_CACHE"               = "true"
+    # Redis disabled by default - using filesystem-based sessions
+    # To enable Redis, change ENABLE_REDIS_CACHE to "true"
+    "ENABLE_REDIS_CACHE"               = "false"
     "REDIS_URL"                        = azurerm_redis_cache.redis.hostname
     "REDIS_KEY"                        = azurerm_redis_cache.redis.primary_access_key
     "REDIS_AUTH_TYPE"                  = "key"

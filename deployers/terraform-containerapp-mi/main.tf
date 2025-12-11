@@ -104,11 +104,64 @@ resource "azuread_application" "app_registration" {
     }
   }
 
-  lifecycle {
-    ignore_changes = [
-      app_role,
-    ]
-  }
+}
+
+####################################################################################################
+# App Roles for the Application
+####################################################################################################
+
+resource "azuread_application_app_role" "app_registration_admin" {
+  application_id       = azuread_application.app_registration.id
+  allowed_member_types = ["User"]
+  description          = "Allows access to Admin Settings page."
+  display_name         = "Admins"
+  value                = "Admin"
+  role_id              = "e9b4823f-d17a-44f1-9d71-0f2c0ee45656"
+}
+
+resource "azuread_application_app_role" "app_registration_user" {
+  application_id       = azuread_application.app_registration.id
+  allowed_member_types = ["User"]
+  description          = "Standard user access to chat features."
+  display_name         = "Users"
+  value                = "User"
+  role_id              = "633746c6-3d03-480f-b273-58ece728be52"
+}
+
+resource "azuread_application_app_role" "app_registration_feedbackadmin" {
+  application_id       = azuread_application.app_registration.id
+  allowed_member_types = ["User"]
+  description          = "Allows access to view user feedback admin page."
+  display_name         = "Feedback Admin"
+  value                = "FeedbackAdmin"
+  role_id              = "12e32860-88a8-421e-8a6f-faf08e3efe2e"
+}
+
+resource "azuread_application_app_role" "app_registration_safetyviolationadmin" {
+  application_id       = azuread_application.app_registration.id
+  allowed_member_types = ["User"]
+  description          = "Allows access to view content safety violations."
+  display_name         = "Safety Violation Admin"
+  value                = "SafetyViolationAdmin"
+  role_id              = "877166d4-eaa3-4fa6-8d79-e2f325f0e331"
+}
+
+resource "azuread_application_app_role" "app_registration_creategroups" {
+  application_id       = azuread_application.app_registration.id
+  allowed_member_types = ["User"]
+  description          = "Allows user to create new groups (if enabled)."
+  display_name         = "Create Group"
+  value                = "CreateGroups"
+  role_id              = "3a614cbb-7f8b-47e1-8e55-5b3c4f71a1c8"
+}
+
+resource "azuread_application_app_role" "app_registration_createpublicworkspaces" {
+  application_id       = azuread_application.app_registration.id
+  allowed_member_types = ["User"]
+  description          = "Allows user to create new public workspaces (if enabled)."
+  display_name         = "Create Public Workspace"
+  value                = "CreatePublicWorkspaces"
+  role_id              = "7b5c9d8e-4f2a-11ef-9b3c-0242ac120002"
 }
 
 resource "azuread_application_password" "app_registration_secret" {

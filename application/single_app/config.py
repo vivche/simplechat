@@ -89,7 +89,7 @@ EXECUTOR_TYPE = 'thread'
 EXECUTOR_MAX_WORKERS = 30
 SESSION_TYPE = 'filesystem'
 SESSION_FILE_DIR = '/tmp/flask_session'
-VERSION = "0.229.099"
+VERSION = "0.229.101"
 
 # Ensure session directory exists
 import os as _os
@@ -195,6 +195,7 @@ else:
     authority = AzureAuthorityHosts.AZURE_PUBLIC_CLOUD
     credential_scopes=[resource_manager + "/.default"]
     cognitive_services_scope = "https://cognitiveservices.azure.com/.default"
+    search_resource_manager = "https://search.azure.com"
 
 storage_account_user_documents_container_name = "user-documents"
 storage_account_group_documents_container_name = "group-documents"
