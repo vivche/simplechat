@@ -3,7 +3,7 @@ name: SimpleChat Container APP Docker (using MI) Image Publish
 on:
   push:
     branches:
-    - feature/containerize-app
+    - containerize-app-mi
   workflow_dispatch:
 
 jobs:
