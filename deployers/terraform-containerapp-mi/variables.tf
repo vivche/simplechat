@@ -44,50 +44,9 @@ variable "param_resource_group_name" {
   type        = string
 }
 
-variable "param_log_analytics_name" {
-  description = "Existing Log Analytics workspace name."
+variable "param_resource_owner_email_id" {
+  description = "Email address of resource owner for app registration ownership."
   type        = string
-}
-
-variable "param_cosmos_account_name" {
-  description = "Existing Cosmos DB account name."
-  type        = string
-}
-
-variable "param_search_service_name" {
-  description = "Existing Azure Search service name."
-  type        = string
-}
-
-variable "param_docintel_account_name" {
-  description = "Existing Document Intelligence account name."
-  type        = string
-}
-
-variable "param_redis_cache_name" {
-  description = "Existing Redis Cache name."
-  type        = string
-}
-
-variable "param_appinsights_name" {
-  description = "Existing Application Insights name."
-  type        = string
-}
-
-variable "param_app_registration_client_id" {
-  description = "Existing Azure AD App Registration Client ID."
-  type        = string
-}
-
-variable "param_user_assigned_identity_name" {
-  description = "Existing user-assigned managed identity name."
-  type        = string
-}
-
-variable "param_app_registration_secret" {
-  description = "Azure AD App Registration secret value."
-  type        = string
-  sensitive   = true
 }
 
 # ACR configuration

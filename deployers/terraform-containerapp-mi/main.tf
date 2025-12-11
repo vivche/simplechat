@@ -48,54 +48,31 @@ data "azurerm_resource_group" "rg" {
   name = var.param_resource_group_name
 }
 
+# ACR and OpenAI are pre-existing, created via PowerShell
 data "azurerm_container_registry" "acrregistry" {
   name                = var.acr_name
   resource_group_name = var.acr_resource_group_name
 }
 
-data "azurerm_log_analytics_workspace" "law" {
-  name                = var.param_log_analytics_name
-  resource_group_name = var.param_resource_group_name
+data "azurerm_cognitive_account" "openai" {
+  name                = var.param_existing_azure_openai_resource_name
+  resource_group_name = var.param_existing_azure_openai_resource_group_name
 }
 
-data "azurerm_cosmosdb_account" "cosmos" {
-  name                = var.param_cosmos_account_name
-  resource_group_name = var.param_resource_group_name
+# User data source for app registration ownership
+data "azuread_user" "application_owner" {
+  user_principal_name = var.param_resource_owner_email_id
 }
 
-data "azurerm_search_service" "search" {
-  name                = var.param_search_service_name
-  resource_group_name = var.param_resource_group_name
-}
-
-data "azurerm_cognitive_account" "docintel" {
-  name                = var.param_docintel_account_name
-  resource_group_name = var.param_resource_group_name
-}
-
-data "azurerm_redis_cache" "redis" {
-  name                = var.param_redis_cache_name
-  resource_group_name = var.param_resource_group_name
-}
-
-data "azurerm_application_insights" "ai" {
-  name                = var.param_appinsights_name
-  resource_group_name = var.param_resource_group_name
-}
-
-data "azuread_application" "app_registration" {
-  client_id = var.param_app_registration_client_id
-}
-
-data "azurerm_user_assigned_identity" "id" {
-  name                = var.param_user_assigned_identity_name
-  resource_group_name = var.param_resource_group_name
-}
+# Note: Infrastructure resources (Cosmos, Search, Redis, etc.) are created in infrastructure.tf
+# They can be referenced directly in containerapp.tf as resource references
 
 # Locals
 locals {
   param_registry_server = "${var.acr_name}.azurecr.io"
   param_base_name       = "${var.param_base_name}-${var.param_environment}"
+  app_registration_name = "${var.param_base_name}-${var.param_environment}-ar"
+  containerapp_fqdn_suffix = var.global_which_azure_platform == "AzureUSGovernment" ? ".azurecontainerapps.us" : ".azurecontainerapps.io"
   
   cosmos_db_url_template = var.global_which_azure_platform == "AzureUSGovernment" ? "https://%s.documents.azure.us:443/" : "https://%s.documents.azure.com:443/"
   openai_url_template    = var.global_which_azure_platform == "AzureUSGovernment" ? "https://%s.openai.azure.us/" : "https://%s.openai.azure.com/"
@@ -104,5 +81,39 @@ locals {
     Environment = var.param_environment
     Owner       = var.param_resource_owner_id
     Project     = "SimpleChat-ContainerApp"
+  }
+}
+
+####################################################################################################
+# Azure AD App Registration (for authentication)
+####################################################################################################
+
+resource "azuread_application" "app_registration" {
+  display_name = local.app_registration_name
+  owners       = [data.azuread_client_config.current.object_id, data.azuread_user.application_owner.object_id]
+
+  web {
+    redirect_uris = [
+      "https://${local.param_base_name}-containerapp${local.containerapp_fqdn_suffix}/.auth/login/aad/callback",
+      "https://${local.param_base_name}-containerapp${local.containerapp_fqdn_suffix}/getAToken",
+    ]
+    logout_url = "https://${local.param_base_name}-containerapp${local.containerapp_fqdn_suffix}/logout"
+    implicit_grant {
+      access_token_issuance_enabled = true
+      id_token_issuance_enabled     = true
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      app_role,
+    ]
+  }
+}
+
+resource "azuread_application_password" "app_registration_secret" {
+  application_id = azuread_application.app_registration.id
+  rotate_when_changed = {
+    rotation = 180
   }
 }

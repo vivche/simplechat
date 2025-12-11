@@ -89,7 +89,7 @@ EXECUTOR_TYPE = 'thread'
 EXECUTOR_MAX_WORKERS = 30
 SESSION_TYPE = 'filesystem'
 SESSION_FILE_DIR = '/tmp/flask_session'
-VERSION = "0.229.098"
+VERSION = "0.229.099"
 
 # Ensure session directory exists
 import os as _os

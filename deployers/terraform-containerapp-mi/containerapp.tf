@@ -11,7 +11,7 @@ resource "azurerm_container_app_environment" "containerapp_env" {
   name                       = "${local.param_base_name}-containerenv"
   location                   = data.azurerm_resource_group.rg.location
   resource_group_name        = data.azurerm_resource_group.rg.name
-  log_analytics_workspace_id = data.azurerm_log_analytics_workspace.law.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
 
   tags = local.common_tags
 }
@@ -25,12 +25,12 @@ resource "azurerm_container_app" "simplechat" {
 
   identity {
     type = "SystemAssigned, UserAssigned"
-    identity_ids = [data.azurerm_user_assigned_identity.id.id]
+    identity_ids = [azurerm_user_assigned_identity.id.id]
   }
 
   registry {
     server   = local.param_registry_server
-    identity = data.azurerm_user_assigned_identity.id.id
+    identity = azurerm_user_assigned_identity.id.id
   }
 
   template {
@@ -42,12 +42,12 @@ resource "azurerm_container_app" "simplechat" {
 
       env {
         name  = "SECRET_KEY"
-        value = var.param_app_registration_secret
+        value = azuread_application_password.app_registration_secret.value
       }
 
       env {
         name  = "CLIENT_ID"
-        value = data.azuread_application.app_registration.client_id
+        value = azuread_application.app_registration.client_id
       }
 
       env {
@@ -67,12 +67,12 @@ resource "azurerm_container_app" "simplechat" {
 
       env {
         name  = "AZURE_COSMOS_ENDPOINT"
-        value = format(local.cosmos_db_url_template, data.azurerm_cosmosdb_account.cosmos.name)
+        value = format(local.cosmos_db_url_template, azurerm_cosmosdb_account.cosmos.name)
       }
 
       env {
-        name  = "AZURE_COSMOS_KEY"
-        value = data.azurerm_cosmosdb_account.cosmos.primary_key
+        name  = "COSMOS_KEY"
+        value = azurerm_cosmosdb_account.cosmos.primary_key
       }
 
       env {
@@ -122,22 +122,22 @@ resource "azurerm_container_app" "simplechat" {
 
       env {
         name  = "AZURE_SEARCH_SERVICE_NAME"
-        value = data.azurerm_search_service.search.name
+        value = azurerm_search_service.search.name
       }
 
       env {
-        name  = "AZURE_SEARCH_API_KEY"
-        value = data.azurerm_search_service.search.primary_key
+        name  = "SEARCH_API_KEY"
+        value = azurerm_search_service.search.primary_key
       }
 
       env {
         name  = "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
-        value = data.azurerm_cognitive_account.docintel.endpoint
+        value = azurerm_cognitive_account.docintel.endpoint
       }
 
       env {
-        name  = "AZURE_DOCUMENT_INTELLIGENCE_API_KEY"
-        value = data.azurerm_cognitive_account.docintel.primary_access_key
+        name  = "DOCUMENT_INTELLIGENCE_KEY"
+        value = azurerm_cognitive_account.docintel.primary_access_key
       }
 
       env {
@@ -147,12 +147,12 @@ resource "azurerm_container_app" "simplechat" {
 
       env {
         name  = "REDIS_URL"
-        value = data.azurerm_redis_cache.redis.hostname
+        value = azurerm_redis_cache.redis.hostname
       }
 
       env {
-        name  = "REDIS_KEY"
-        value = data.azurerm_redis_cache.redis.primary_access_key
+        name  = "REDIS_PASSWORD"
+        value = azurerm_redis_cache.redis.primary_access_key
       }
 
       env {
@@ -177,12 +177,12 @@ resource "azurerm_container_app" "simplechat" {
 
       env {
         name  = "APPINSIGHTS_INSTRUMENTATIONKEY"
-        value = data.azurerm_application_insights.ai.instrumentation_key
+        value = azurerm_application_insights.ai.instrumentation_key
       }
 
       env {
         name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
-        value = data.azurerm_application_insights.ai.connection_string
+        value = azurerm_application_insights.ai.connection_string
       }
     }
 
@@ -204,12 +204,62 @@ resource "azurerm_container_app" "simplechat" {
   tags = local.common_tags
 }
 
+####################################################################################################
+# RBAC Role Assignments for Managed Identity
+####################################################################################################
+
 # Role assignment for ACR Pull
 resource "azurerm_role_assignment" "containerapp_acr_pull" {
   scope                = data.azurerm_container_registry.acrregistry.id
   role_definition_name = "AcrPull"
-  principal_id         = data.azurerm_user_assigned_identity.id.principal_id
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
 }
+
+# Role assignment for Cosmos DB
+resource "azurerm_role_assignment" "cosmos_contributor" {
+  scope                = azurerm_cosmosdb_account.cosmos.id
+  role_definition_name = "Cosmos DB Built-in Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+# Role assignment for Azure AI Search
+resource "azurerm_role_assignment" "search_contributor" {
+  scope                = azurerm_search_service.search.id
+  role_definition_name = "Search Index Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+# Role assignment for Document Intelligence
+resource "azurerm_role_assignment" "docintel_user" {
+  scope                = azurerm_cognitive_account.docintel.id
+  role_definition_name = "Cognitive Services User"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+# Role assignment for Redis Cache
+resource "azurerm_role_assignment" "redis_contributor" {
+  scope                = azurerm_redis_cache.redis.id
+  role_definition_name = "Redis Cache Contributor"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+# Role assignment for Azure OpenAI
+resource "azurerm_role_assignment" "openai_user" {
+  scope                = data.azurerm_cognitive_account.openai.id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+# Role assignment for Storage Account
+resource "azurerm_role_assignment" "storage_blob_contributor" {
+  scope                = azurerm_storage_account.sa.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.id.principal_id
+}
+
+####################################################################################################
+# Outputs
+####################################################################################################
 
 # Output the Container App URL
 output "containerapp_fqdn" {
