@@ -771,7 +771,7 @@ if ($param_UseExisting_OpenAi_Instance -eq $true) {
     $account = az cognitiveservices account show --name $openAIName --resource-group $resourceGroupName --query "name" --output tsv 2>$null
     if (-not $account) {
         Write-Host "Cognitive Services account does not exist. Creating..."
-        az cognitiveservices account create --name $openAIName --resource-group $resourceGroupName --location $paramLocation --kind "OpenAI" --sku $paramCognitiveServicesSku --tags $tagsJson
+        az cognitiveservices account create --name $openAIName --resource-group $resourceGroupName --location $paramLocation --kind "OpenAI" --sku $paramCognitiveServicesSku --custom-domain $openAIName --tags $tagsJson
         if ($LASTEXITCODE -ne 0) { Write-Warning "Failed to create Azure OpenAI Service '$($openAIName)'. Ensure your subscription is approved for OpenAI and the SKU/region is available in Azure Government." }
         else { Write-Host "Azure OpenAI Service '$($openAIName)' created successfully." }
     } else {
@@ -800,9 +800,16 @@ Write-Host "`n=====> Creating Azure AI Search Service: $($searchServiceName)..."
 $searchService = az search service show --name $searchServiceName --resource-group $resourceGroupName 2>$null | ConvertFrom-Json
 if (-not $searchService) {
     Write-Host "Search service does not exist. Creating..."
-    $searchService = az search service create --name $searchServiceName --resource-group $resourceGroupName --location $paramLocation --sku $paramSearchSku --replica-count $paramSearchReplicaCount --partition-count $paramSearchPartitionCount --public-network-access enabled | ConvertFrom-Json
+    $searchService = az search service create --name $searchServiceName --resource-group $resourceGroupName --location $paramLocation --sku $paramSearchSku --replica-count $paramSearchReplicaCount --partition-count $paramSearchPartitionCount --public-network-access enabled --auth-options aadOrApiKey --aad-auth-failure-mode http401WithBearerChallenge | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0) { Write-Warning "Failed to create Azure AI Search Service '$($searchServiceName)'. Check SKU availability and naming uniqueness." }
     else { Write-Host "Azure AI Search Service '$($searchServiceName)' created successfully." }
+}
+else {
+    Write-Host "Azure AI Search Service '$($searchServiceName)' already exists. Ensuring Azure AD authentication is enabled..."
+    # Update to ensure Azure AD authentication is enabled for managed identity support
+    az search service update --name $searchServiceName --resource-group $resourceGroupName --auth-options aadOrApiKey --aad-auth-failure-mode http401WithBearerChallenge 2>$null
+    if ($LASTEXITCODE -eq 0) { Write-Host "Azure AI Search authentication mode updated to support managed identity." }
+}
 
     # This doesn't work. Do this manually.
     #Deploy index as json files to Azure Search

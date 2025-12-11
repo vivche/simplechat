@@ -59,6 +59,10 @@ resource "azurerm_search_service" "search" {
   replica_count       = 1
   partition_count     = 1
 
+  # Enable Azure AD authentication for managed identity support
+  authentication_failure_mode = "http401WithBearerChallenge"
+  local_authentication_enabled = true  # Allows both AAD and API key (aadOrApiKey mode)
+
   tags = local.common_tags
 }
 
