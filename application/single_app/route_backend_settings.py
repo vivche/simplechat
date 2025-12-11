@@ -384,11 +384,12 @@ def get_index_client() -> SearchIndexClient:
     else:
         endpoint = settings["azure_ai_search_endpoint"].rstrip("/")
         if settings.get("azure_ai_search_authentication_type", "key") == "managed_identity":
+            from config import search_data_plane_scope
             credential = DefaultAzureCredential()
             if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                 return SearchIndexClient(endpoint=endpoint,
                                           credential=credential,
-                                          audience=search_resource_manager)
+                                          audience=search_data_plane_scope.replace("/.default", ""))
         else:
             credential = AzureKeyCredential(settings["azure_ai_search_key"])
 
@@ -466,9 +467,11 @@ def _test_redis_connection(payload):
     try:
         if redis_auth_type == 'managed_identity':
             # Acquire token from managed identity for Redis scope
+            # Extract hostname from redis_host to build the scope dynamically
             credential = DefaultAzureCredential()
-            token = credential.get_token("https://*.cacheinfra.windows.net:10225/appid/.default").token
-            redis_password = token
+            redis_hostname = redis_host.split('.')[0]
+            token = credential.get_token(f"https://{redis_hostname}.cacheinfra.windows.net:10225/appid")
+            redis_password = token.token
         else:
             if not redis_key:
                 return jsonify({'error': 'Redis key is required for key auth'}), 400
@@ -675,13 +678,12 @@ def _test_azure_ai_search_connection(payload):
         url = f"{endpoint.rstrip('/')}/indexes?api-version=2023-11-01"
 
         if direct_data.get('auth_type') == 'managed_identity':
-            # Use search_resource_manager for the appropriate scope
-            credential_scopes = search_resource_manager + "/.default"
-            arm_scope = credential_scopes
+            # Use search_data_plane_scope for data operations
+            from config import search_data_plane_scope
             credential = DefaultAzureCredential()
-            arm_token = credential.get_token(arm_scope).token
+            search_token = credential.get_token(search_data_plane_scope).token
             headers = {
-                'Authorization': f'Bearer {arm_token}',
+                'Authorization': f'Bearer {search_token}',
                 'Content-Type': 'application/json'
             }
         else:

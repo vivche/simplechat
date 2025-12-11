@@ -89,7 +89,7 @@ EXECUTOR_TYPE = 'thread'
 EXECUTOR_MAX_WORKERS = 30
 SESSION_TYPE = 'filesystem'
 SESSION_FILE_DIR = '/tmp/flask_session'
-VERSION = "0.229.101"
+VERSION = "0.229.104"
 
 # Ensure session directory exists
 import os as _os
@@ -180,6 +180,7 @@ if AZURE_ENVIRONMENT == "usgovernment":
     authority = AzureAuthorityHosts.AZURE_GOVERNMENT
     credential_scopes=[resource_manager + "/.default"]
     cognitive_services_scope = "https://cognitiveservices.azure.us/.default"
+    search_data_plane_scope = "https://search.azure.us/.default"
     video_indexer_endpoint = "https://api.videoindexer.ai.azure.us"
     search_resource_manager = "https://search.azure.us"
 
@@ -188,6 +189,7 @@ elif AZURE_ENVIRONMENT == "custom":
     authority = CUSTOM_IDENTITY_URL_VALUE
     credential_scopes=[resource_manager + "/.default"]
     cognitive_services_scope = CUSTOM_COGNITIVE_SERVICES_URL_VALUE  
+    search_data_plane_scope = f"{CUSTOM_SEARCH_RESOURCE_MANAGER_URL_VALUE}/.default"
     search_resource_manager = CUSTOM_SEARCH_RESOURCE_MANAGER_URL_VALUE
 else:
     OIDC_METADATA_URL = f"https://login.microsoftonline.com/{TENANT_ID}/v2.0/.well-known/openid-configuration"
@@ -195,6 +197,7 @@ else:
     authority = AzureAuthorityHosts.AZURE_PUBLIC_CLOUD
     credential_scopes=[resource_manager + "/.default"]
     cognitive_services_scope = "https://cognitiveservices.azure.com/.default"
+    search_data_plane_scope = "https://search.azure.com/.default"
     search_resource_manager = "https://search.azure.com"
 
 storage_account_user_documents_container_name = "user-documents"
@@ -626,19 +629,19 @@ def initialize_clients(settings):
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-user-index",
                             credential=DefaultAzureCredential(),
-                            audience=search_resource_manager
+                            audience=search_data_plane_scope.replace("/.default", "")
                         )
                         search_client_group = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-group-index",
                             credential=DefaultAzureCredential(),
-                            audience=search_resource_manager
+                            audience=search_data_plane_scope.replace("/.default", "")
                         )
                         search_client_public = SearchClient(
                             endpoint=azure_ai_search_endpoint,
                             index_name="simplechat-public-index",
                             credential=DefaultAzureCredential(),
-                            audience=search_resource_manager
+                            audience=search_data_plane_scope.replace("/.default", "")
                         )
                     else:
                         search_client_user = SearchClient(

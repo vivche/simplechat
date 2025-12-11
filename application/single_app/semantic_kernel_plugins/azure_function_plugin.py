@@ -4,6 +4,7 @@ from semantic_kernel.functions import kernel_function
 from semantic_kernel_plugins.plugin_invocation_logger import plugin_function_logger
 import requests
 from azure.identity import DefaultAzureCredential
+from config import app
 
 class AzureFunctionPlugin(BasePlugin):
     def __init__(self, manifest: Dict[str, Any]):
@@ -62,7 +63,7 @@ class AzureFunctionPlugin(BasePlugin):
         url = self.endpoint
         headers = {}
         if self.auth_type == 'identity':
-            token = self.credential.get_token("https://management.azure.com/.default").token
+            token = self.credential.get_token(f"{app.config['resource_manager']}/.default").token
             headers["Authorization"] = f"Bearer {token}"
         elif self.auth_type == 'key':
             if '?' in url:
@@ -79,7 +80,7 @@ class AzureFunctionPlugin(BasePlugin):
         url = self.endpoint
         headers = {}
         if self.auth_type == 'identity':
-            token = self.credential.get_token("https://management.azure.com/.default").token
+            token = self.credential.get_token(f"{app.config['resource_manager']}/.default").token
             headers["Authorization"] = f"Bearer {token}"
         elif self.auth_type == 'key':
             if '?' in url:
