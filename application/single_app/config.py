@@ -88,7 +88,7 @@ load_dotenv()
 EXECUTOR_TYPE = 'thread'
 EXECUTOR_MAX_WORKERS = 30
 SESSION_TYPE = 'filesystem'
-VERSION = "0.229.098"
+VERSION = "0.229.100"
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -469,11 +469,23 @@ def initialize_clients(settings):
     Store them in a global dictionary so they're accessible throughout the app.
     """
     with CLIENTS_LOCK:
-        form_recognizer_endpoint = settings.get("azure_document_intelligence_endpoint")
-        form_recognizer_key = settings.get("azure_document_intelligence_key")
+        def _normalize_endpoint(endpoint: str):
+            # Ensure we always have a fully-qualified endpoint (https://...) for SDK clients
+            if endpoint and not endpoint.lower().startswith("http"):
+                return f"https://{endpoint.lstrip('/')}"
+            return endpoint
+
+        form_recognizer_endpoint = _normalize_endpoint(
+            settings.get("azure_document_intelligence_endpoint")
+            or os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", "")
+        )
+        form_recognizer_key = settings.get("azure_document_intelligence_key") or os.getenv("AZURE_DOCUMENT_INTELLIGENCE_API_KEY")
         enable_document_intelligence_apim = settings.get("enable_document_intelligence_apim")
-        azure_apim_document_intelligence_endpoint = settings.get("azure_apim_document_intelligence_endpoint")
-        azure_apim_document_intelligence_subscription_key = settings.get("azure_apim_document_intelligence_subscription_key")
+        azure_apim_document_intelligence_endpoint = _normalize_endpoint(
+            settings.get("azure_apim_document_intelligence_endpoint")
+            or os.getenv("AZURE_APIM_DOCUMENT_INTELLIGENCE_ENDPOINT", "")
+        )
+        azure_apim_document_intelligence_subscription_key = settings.get("azure_apim_document_intelligence_subscription_key") or os.getenv("AZURE_APIM_DOCUMENT_INTELLIGENCE_SUBSCRIPTION_KEY")
 
         azure_ai_search_endpoint = settings.get("azure_ai_search_endpoint")
         azure_ai_search_key = settings.get("azure_ai_search_key")
@@ -487,11 +499,16 @@ def initialize_clients(settings):
 
         try:
             if enable_document_intelligence_apim:
+                if not azure_apim_document_intelligence_endpoint:
+                    raise ValueError("Document Intelligence APIM endpoint is not configured.")
                 document_intelligence_client = DocumentIntelligenceClient(
                     endpoint=azure_apim_document_intelligence_endpoint,
                     credential=AzureKeyCredential(azure_apim_document_intelligence_subscription_key)
                 )
             else:
+                if not form_recognizer_endpoint:
+                    raise ValueError("Document Intelligence endpoint is not configured.")
+
                 if settings.get("azure_document_intelligence_authentication_type") == "managed_identity":
                     if AZURE_ENVIRONMENT in ("usgovernment", "custom"):
                         document_intelligence_client = DocumentIntelligenceClient(

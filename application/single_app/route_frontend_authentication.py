@@ -55,7 +55,8 @@ def register_route_frontend_authentication(app):
                 # Fall back to environment variable if Front Door is enabled but no URL is set
                 redirect_uri = LOGIN_REDIRECT_URL or url_for('authorized', _external=True, _scheme='https')
         else:
-            redirect_uri = url_for('authorized', _external=True, _scheme='https')
+            # Use environment variable for local development, fall back to url_for if not set
+            redirect_uri = LOGIN_REDIRECT_URL or url_for('authorized', _external=True, _scheme='https')
         
         debug_print(f"LOGIN_REDIRECT_URL (env): {LOGIN_REDIRECT_URL}")
         debug_print(f"front_door_url (db): {settings.get('front_door_url')}")
@@ -104,7 +105,8 @@ def register_route_frontend_authentication(app):
                 # Fall back to environment variable if Front Door is enabled but no URL is set
                 redirect_uri = LOGIN_REDIRECT_URL or url_for('authorized', _external=True, _scheme='https')
         else:
-            redirect_uri = url_for('authorized', _external=True, _scheme='https')
+            # Use environment variable for local development, fall back to url_for if not set
+            redirect_uri = LOGIN_REDIRECT_URL or url_for('authorized', _external=True, _scheme='https')
         
         print(f"Token exchange using redirect_uri: {redirect_uri}")
 
@@ -149,9 +151,12 @@ def register_route_frontend_authentication(app):
                 print(f"Redirecting to configured Front Door URL: {home_url}")
                 return redirect(home_url)
             elif HOME_REDIRECT_URL:
-                # Fall back to environment variable if Front Door is enabled but no URL is set
-                print(f"Redirecting to environment HOME_REDIRECT_URL: {HOME_REDIRECT_URL}")
+                print(f"Redirecting to HOME_REDIRECT_URL: {HOME_REDIRECT_URL}")
                 return redirect(HOME_REDIRECT_URL)
+        elif HOME_REDIRECT_URL:
+            # Use environment variable for local development when Front Door is disabled
+            print(f"Redirecting to environment HOME_REDIRECT_URL: {HOME_REDIRECT_URL}")
+            return redirect(HOME_REDIRECT_URL)
         
         debug_print(f"Front Door not enabled or URLs not set, falling back to url_for('index')")
         return redirect(url_for('index')) # Or another appropriate page

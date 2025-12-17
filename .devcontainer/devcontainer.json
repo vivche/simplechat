@@ -1,36 +1,41 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/python
+// For format details, see https://aka.ms/devcontainer.json
 {
-	"name": "Python 3",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
-	"features": {
-		"ghcr.io/devcontainers/features/python:1": {},
-		"ghcr.io/devcontainers-extra/features/black:2": {},
-		"ghcr.io/devcontainers/features/azure-cli:1": {},
-		"ghcr.io/devcontainers/features/terraform:1": {},
-		"ghcr.io/devcontainers/features/powershell:1": {}
-		"ghcr.io/devcontainers-extra/features/black:2": {}
-	},
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip3 install --user -r application/single_app/requirements.txt",
-	// Configure tool-specific properties.
+	"name": "SimpleChat",
+	
+	// Use the existing Dockerfile to build the container
+	"dockerFile": "../application/single_app/Dockerfile",
+	"context": "..",
+	
+	// Pass environment variables from .env file and publish port
+	"runArgs": [
+		"--env-file=${localWorkspaceFolder}/application/single_app/.env",
+		"-p", "8000:8000"
+	],
+	
+	// Forward the Flask app port
+	"forwardPorts": [8000],
+	
+	// Run as the non-root user created in Dockerfile
+	"remoteUser": "appuser",
+	
+	// Override default command to keep container running for development
+	"overrideCommand": true,
+	
+	// Start the Flask app in the background after container is created
+	"postCreateCommand": "bash -c 'chmod +x /workspaces/simplechat/.devcontainer/start-app.sh && /workspaces/simplechat/.devcontainer/start-app.sh'",
+	
+	// VS Code extensions for Python development
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
-				"ms-python.black-formatter",
-				"ms-azuretools.vscode-azureterraform",
-				"ms-vscode.azurecli",
-				"HashiCorp.terraform",
-				"ms-vscode.powershell"
-			]
+				"ms-python.vscode-pylance",
+				"github.copilot",
+				"github.copilot-chat"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/app/venv/bin/python"
+			}
 		}
 	}
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
 }

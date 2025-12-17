@@ -70,6 +70,10 @@ app.config['SESSION_TYPE'] = SESSION_TYPE
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 
+# Initialize Flask-Session at module level (before first request)
+from flask_session import Session
+Session(app)
+
 app.register_blueprint(admin_plugins_bp)
 app.register_blueprint(dynamic_plugins_bp)
 app.register_blueprint(admin_agents_bp)
@@ -88,7 +92,6 @@ from swagger_wrapper import register_swagger_routes
 register_swagger_routes(app)
 
 from flask import g
-from flask_session import Session
 from redis import Redis
 from functions_settings import get_settings
 from functions_authentication import get_current_user_id
@@ -99,12 +102,9 @@ from route_external_health import *
 configure_azure_monitor()
 
 # =================== Helper Functions ===================
-@app.before_first_request
-def before_first_request():
+def initialize_application():
+    """Initialize the application at startup."""
     print("Initializing application...")
-    
-    # Initialize Flask-Session on first request
-    Session(app)
     
     settings = get_settings()
     print(f"DEBUG:Application settings: {settings}")
@@ -431,8 +431,8 @@ register_route_backend_public_prompts(app)
 register_route_external_health(app)
 
 if __name__ == '__main__':
-    settings = get_settings()
-    initialize_clients(settings)
+    # Initialize application at startup instead of waiting for first request
+    initialize_application()
 
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
 
